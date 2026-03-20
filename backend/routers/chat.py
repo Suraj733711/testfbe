@@ -13,7 +13,7 @@ from logger import logger
 
 router = APIRouter()
 
-@router.post("/")
+@router.post("")
 def chat_with_gemini(req: ChatRequest, db: Session = Depends(get_db)):
     logger.info("Received chat request for Gemini AI.")
     if not settings.GEMINI_API_KEY:

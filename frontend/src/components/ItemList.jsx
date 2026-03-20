@@ -3,8 +3,9 @@ import React from 'react';
 const ItemList = ({ items, onEdit, onDelete }) => {
   if (items.length === 0) {
     return (
-      <div className="glass-card" style={{ textAlign: 'center', padding: '4rem' }}>
-        <p style={{ color: '#94a3b8' }}>No tasks found in this view. Ready for a new one? 🚀</p>
+      <div className="glass-card" style={{ textAlign: 'center', padding: '4rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <img src="/vegeta.png" alt="Vegeta" style={{ width: '180px', borderRadius: '16px', marginBottom: '1.5rem', boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4)' }} />
+        <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>No tasks found in this view. Blast away your limits and train! ⚡</p>
       </div>
     );
   }

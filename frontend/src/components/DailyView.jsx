@@ -37,8 +37,9 @@ const DailyView = ({ tasks, onTaskClick }) => {
             );
           })
         ) : (
-          <div className="empty-state">
-            <p>No tasks scheduled for today. Take a break! ☕</p>
+          <div className="empty-state" style={{ textAlign: 'center', padding: '3rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <img src="/vegeta.png" alt="Vegeta Power Up" style={{ width: '150px', borderRadius: '16px', marginBottom: '1rem', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)' }} />
+            <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>No tasks scheduled for today. Time to hit the gravity chamber! 💥</p>
           </div>
         )}
       </div>

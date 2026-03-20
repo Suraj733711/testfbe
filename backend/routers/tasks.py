@@ -10,7 +10,7 @@ from logger import logger
 
 router = APIRouter()
 
-@router.get("/", response_model=List[TaskResponse])
+@router.get("", response_model=List[TaskResponse])
 def get_tasks(db: Session = Depends(get_db)):
     logger.info("Fetching all tasks from the database.")
     tasks = db.query(Task).order_by(Task.due_date.asc()).all()
@@ -26,7 +26,7 @@ def get_task(task_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
     return task
 
-@router.post("/", response_model=TaskResponse, status_code=201)
+@router.post("", response_model=TaskResponse, status_code=201)
 def create_task(task_in: TaskCreate, db: Session = Depends(get_db)):
     logger.info(f"Creating new task: '{task_in.title}' priority: {task_in.priority}")
     new_task = Task(
