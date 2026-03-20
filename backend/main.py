@@ -17,6 +17,7 @@ origins = [
     "http://localhost:3000",      # Alternative dev port
     # Add your Vercel deployment URL here, e.g.:
     "https://testfbe.onrender.com"
+    "https://testfbe.vercel.app"
     # "https://your-app.vercel.app",
 ]
 
