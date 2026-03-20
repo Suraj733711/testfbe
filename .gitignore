@@ -10,7 +10,6 @@ frontend/.env.local
 # Python
 backend/__pycache__/
 backend/*.pyc
-backend/.env
 
 # IDE
 .vscode/
