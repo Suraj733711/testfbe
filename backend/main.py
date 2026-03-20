@@ -16,6 +16,7 @@ origins = [
     "http://localhost:5173",      # Vite dev server
     "http://localhost:3000",      # Alternative dev port
     # Add your Vercel deployment URL here, e.g.:
+    "https://testfbe.onrender.com"
     # "https://your-app.vercel.app",
 ]
 
