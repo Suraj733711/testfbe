@@ -1,0 +1,21 @@
+# Dependencies
+frontend/node_modules/
+
+# Build output
+frontend/dist/
+
+# Environment files (keep .env.production as template)
+frontend/.env.local
+
+# Python
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
