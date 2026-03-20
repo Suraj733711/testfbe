@@ -1,24 +1,29 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
-import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from database import engine, Base
+from routers import tasks, chat
+from logger import logger
+
+# Create tables
+logger.info("Ensuring database tables exist.")
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="TestProject API",
-    description="A simple FastAPI backend for the TestProject application",
-    version="1.0.0",
+    title="TestProject Task Board API",
+    description="A modular FastAPI backend with Gemini AI capabilities",
+    version="3.0.0",
 )
 
-# CORS configuration - update origins with your Vercel URL after deployment
 origins = [
-    "http://localhost:5173",      # Vite dev server
-    "http://localhost:3000",      # Alternative dev port
-    # Add your Vercel deployment URL here, e.g.:
+    "http://localhost:5173",      
+    "http://localhost:3000",      
     "https://testfbe.onrender.com",
     "https://testfbe.vercel.app",
-    # "https://your-app.vercel.app",
 ]
 
 app.add_middleware(
@@ -29,85 +34,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# ---------- Models ----------
-class ItemCreate(BaseModel):
-    title: str
-    description: Optional[str] = None
-
-
-class Item(BaseModel):
-    id: str
-    title: str
-    description: Optional[str] = None
-    created_at: str
-
-
-# ---------- In-memory store ----------
-items_db: dict[str, Item] = {}
-
-# Seed some sample data
-_seed_items = [
-    ("Learn FastAPI", "Build REST APIs with Python's fastest framework"),
-    ("Build React Frontend", "Create a beautiful UI with React and Vite"),
-    ("Deploy to Cloud", "Host frontend on Vercel and backend on Render"),
-]
-for title, desc in _seed_items:
-    _id = str(uuid.uuid4())
-    items_db[_id] = Item(
-        id=_id,
-        title=title,
-        description=desc,
-        created_at=datetime.utcnow().isoformat(),
-    )
-
-
-# ---------- Routes ----------
+# Root/health routes
 @app.get("/")
-async def root():
+def root():
+    logger.debug("Root endpoint accessed.")
     return {
-        "message": "Welcome to the TestProject API 🚀",
-        "docs": "/docs",
-        "endpoints": {
-            "items": "/api/items",
-            "health": "/api/health",
-        },
+        "message": "Welcome to the Task Board API 🚀",
+        "database": "PostgreSQL" if "postgresql" in engine.url.drivername else "SQLite",
+        "endpoints": ["/api/tasks", "/api/chat", "/api/health"]
     }
 
-
 @app.get("/api/health")
-async def health_check():
+def health_check():
+    logger.debug("Health check pinged.")
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
-
-@app.get("/api/items", response_model=list[Item])
-async def get_items():
-    return list(items_db.values())
-
-
-@app.get("/api/items/{item_id}", response_model=Item)
-async def get_item(item_id: str):
-    if item_id not in items_db:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return items_db[item_id]
-
-
-@app.post("/api/items", response_model=Item, status_code=201)
-async def create_item(item: ItemCreate):
-    new_id = str(uuid.uuid4())
-    new_item = Item(
-        id=new_id,
-        title=item.title,
-        description=item.description,
-        created_at=datetime.utcnow().isoformat(),
-    )
-    items_db[new_id] = new_item
-    return new_item
-
-
-@app.delete("/api/items/{item_id}")
-async def delete_item(item_id: str):
-    if item_id not in items_db:
-        raise HTTPException(status_code=404, detail="Item not found")
-    del items_db[item_id]
-    return {"message": "Item deleted successfully"}
+# Include routers
+logger.info("Mounting API routers...")
+app.include_router(tasks.router, prefix="/api/tasks", tags=["Tasks"])
+app.include_router(chat.router, prefix="/api/chat", tags=["AI Chat"])
+logger.info("Application startup sequence complete.")

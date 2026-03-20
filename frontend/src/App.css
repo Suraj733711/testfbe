@@ -199,56 +199,7 @@
 }
 
 /* ===== Buttons ===== */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-family);
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  border: none;
-  outline: none;
-}
-
-.btn:active {
-  transform: scale(0.97);
-}
-
-.btn--primary {
-  background: var(--accent-gradient);
-  color: white;
-  box-shadow: 0 2px 12px var(--accent-glow);
-}
-
-.btn--primary:hover {
-  box-shadow: 0 4px 20px var(--accent-glow);
-  filter: brightness(1.1);
-}
-
-.btn--primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  filter: none;
-  box-shadow: none;
-}
-
-.btn--danger {
-  background: transparent;
-  color: var(--danger);
-  border: 1px solid transparent;
-  padding: var(--space-xs) var(--space-sm);
-  font-size: 0.8rem;
-}
-
-.btn--danger:hover {
-  background: var(--danger-bg);
-  border-color: rgba(239, 68, 68, 0.2);
-}
+/* Buttons are handled in index.css */
 
 /* ===== Item List ===== */
 .item-list {

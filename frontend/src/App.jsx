@@ -1,176 +1,190 @@
 import { useState, useEffect, useCallback } from 'react';
+import CalendarView from './components/CalendarView';
+import DailyView from './components/DailyView';
 import ItemList from './components/ItemList';
+import AIAssistant from './components/AIAssistant';
 import './App.css';
 
-// Use environment variable for API URL, fallback to localhost for development
+// Using environment variable for API URL
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 function App() {
-  const [items, setItems] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [connected, setConnected] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [view, setView] = useState('daily'); // 'daily', 'calendar', 'all'
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentTask, setCurrentTask] = useState(null); // For editing
 
   // Form state
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    status: 'todo',
+    due_date: new Date().toISOString().slice(0, 16) // Default to now
+  });
 
-  const showToast = (message) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  // Fetch items
-  const fetchItems = useCallback(async () => {
+  const fetchTasks = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/items`);
-      if (!response.ok) throw new Error('Failed to fetch items');
-      const data = await response.json();
-      setItems(data);
-      setConnected(true);
-      setError(null);
+      setLoading(true);
+      const res = await fetch(`${API_URL}/api/tasks`);
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(data);
+      }
     } catch (err) {
-      setError('Unable to connect to the API. Make sure the backend is running.');
-      setConnected(false);
+      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+    fetchTasks();
+  }, [fetchTasks]);
 
-  // Create item
-  const handleCreate = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
-
-    setSubmitting(true);
+    const method = currentTask ? 'PATCH' : 'POST';
+    const url = currentTask ? `${API_URL}/api/tasks/${currentTask.id}` : `${API_URL}/api/tasks`;
+    
     try {
-      const response = await fetch(`${API_URL}/api/items`, {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), description: description.trim() || null }),
+        body: JSON.stringify(formData)
       });
-      if (!response.ok) throw new Error('Failed to create item');
-      const newItem = await response.json();
-      setItems((prev) => [newItem, ...prev]);
-      setTitle('');
-      setDescription('');
-      showToast('✨ Item created successfully!');
+      if (res.ok) {
+        setIsModalOpen(false);
+        setFormData({ title: '', description: '', priority: 'medium', status: 'todo', due_date: new Date().toISOString().slice(0, 16) });
+        setCurrentTask(null);
+        fetchTasks();
+      }
     } catch (err) {
-      setError('Failed to create item. Please try again.');
-    } finally {
-      setSubmitting(false);
+      console.error('Submit error:', err);
     }
   };
 
-  // Delete item
+  const handleEdit = (task) => {
+    setCurrentTask(task);
+    setFormData({
+      title: task.title,
+      description: task.description || '',
+      priority: task.priority,
+      status: task.status,
+      due_date: new Date(task.due_date).toISOString().slice(0, 16)
+    });
+    setIsModalOpen(true);
+  };
+
   const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure?')) return;
     try {
-      const response = await fetch(`${API_URL}/api/items/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete item');
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      showToast('🗑️ Item deleted');
+      await fetch(`${API_URL}/api/tasks/${id}`, { method: 'DELETE' });
+      fetchTasks();
     } catch (err) {
-      setError('Failed to delete item. Please try again.');
+      console.error('Delete error:', err);
     }
   };
 
   return (
-    <div className="app">
-      <div className="container">
-        {/* Header */}
-        <header className="header">
-          <div className="header__badge">
-            <span className="header__badge-dot" />
-            React + FastAPI
-          </div>
-          <h1 className="header__title">Task Dashboard</h1>
-          <p className="header__subtitle">
-            A beautifully crafted full-stack app — React on Vercel, FastAPI on Render
-          </p>
-        </header>
-
-        {/* Status Bar */}
-        <div className="status-bar">
-          <div className="status-bar__info">
-            <span
-              className={`status-bar__indicator ${
-                connected
-                  ? 'status-bar__indicator--connected'
-                  : 'status-bar__indicator--disconnected'
-              }`}
-            >
-              ● {connected ? 'Connected' : 'Disconnected'}
-            </span>
-            <span className="status-bar__count">
-              {items.length} item{items.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-          <span className="status-bar__count" style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
-            API: {API_URL}
-          </span>
+    <div className="app-container">
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <div className="logo-section">
+          <h2 className="title-group" style={{ fontSize: '1.2rem', color: 'white', fontWeight: 'bold' }}>
+            <span style={{ color: '#f59e0b' }}>✦</span> CAPSULE CORP
+          </h2>
         </div>
-
-        {/* Error Banner */}
-        {error && (
-          <div className="error-banner">
-            ⚠️ {error}
+        <nav>
+          <div className={`nav-link ${view === 'daily' ? 'active' : ''}`} onClick={() => setView('daily')}>
+            <span>Today</span>
           </div>
-        )}
-
-        {/* Create Form */}
-        <form className="create-form" onSubmit={handleCreate} id="create-item-form">
-          <h2 className="create-form__header">✦ Create New Item</h2>
-          <div className="create-form__fields">
-            <input
-              id="item-title-input"
-              className="create-form__input"
-              type="text"
-              placeholder="Item title..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-            <textarea
-              id="item-description-input"
-              className="create-form__input create-form__textarea"
-              placeholder="Description (optional)..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+          <div className={`nav-link ${view === 'calendar' ? 'active' : ''}`} onClick={() => setView('calendar')}>
+            <span>Calendar</span>
           </div>
-          <div className="create-form__actions">
-            <button
-              id="create-item-button"
-              type="submit"
-              className="btn btn--primary"
-              disabled={submitting || !title.trim()}
-            >
-              {submitting ? 'Creating...' : '+ Add Item'}
-            </button>
+          <div className={`nav-link ${view === 'all' ? 'active' : ''}`} onClick={() => setView('all')}>
+            <span>All Tasks</span>
           </div>
-        </form>
+        </nav>
+        <button className="btn btn-primary" onClick={() => { setIsModalOpen(true); setCurrentTask(null); }} style={{ width: '100%', marginTop: 'auto' }}>
+          + New Task
+        </button>
+      </aside>
 
-        {/* Item List */}
+      {/* Main Content */}
+      <main className="main-content">
         {loading ? (
-          <div className="loading">
-            <div className="loading__spinner" />
-            <span className="loading__text">Connecting to API...</span>
-          </div>
+          <div className="loading">Processing board...</div>
         ) : (
-          <ItemList items={items} onDelete={handleDelete} />
+          <>
+            {view === 'daily' && <DailyView tasks={tasks} onTaskClick={handleEdit} />}
+            {view === 'calendar' && <CalendarView tasks={tasks} onTaskClick={handleEdit} />}
+            {view === 'all' && <ItemList items={tasks} onEdit={handleEdit} onDelete={handleDelete} />}
+          </>
         )}
+      </main>
 
-        {/* Toast */}
-        {toast && <div className="toast">{toast}</div>}
-      </div>
+      {/* Modern Modal Form */}
+      {isModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2 style={{ marginBottom: '1.5rem' }}>{currentTask ? '✦ Edit Task' : '✦ Create Task'}</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>Title</label>
+                <input 
+                  className="form-input" required 
+                  value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
+                  placeholder="Task title..."
+                />
+              </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea 
+                  className="form-input" 
+                  value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}
+                  placeholder="Additional context..."
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label>Priority</label>
+                  <select className="form-input" value={formData.priority} onChange={e => setFormData({...formData, priority: e.target.value})}>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Due Date</label>
+                  <input 
+                    type="datetime-local" className="form-input" required
+                    value={formData.due_date} onChange={e => setFormData({...formData, due_date: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Status</label>
+                <select className="form-input" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                  <option value="todo">To Do</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="done">Completed</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setIsModalOpen(false)} style={{ flex: 1 }}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                  {currentTask ? 'Save Changes' : 'Create Task'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Global AI Assistant */}
+      <AIAssistant onUpdate={fetchTasks} apiUrl={API_URL} />
     </div>
   );
 }
